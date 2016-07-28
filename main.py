@@ -10,11 +10,12 @@ class Renamer():
 
     def init_config(self):
         parser = argparse.ArgumentParser()
-    
+
         parser.add_argument("-a", "--auth_service")
         parser.add_argument("-u", "--username")
         parser.add_argument("-p", "--password")
         parser.add_argument("--clear", action = 'store_true', default = False)
+        parser.add_argument("--rename", action = 'store_true', default = False)
 
         self.config = parser.parse_args()
         self.config.delay = 2
@@ -63,7 +64,7 @@ class Renamer():
                     pid = pokemon['id']
                     num = int(pokemon['pokemon_id']) - 1
                     name = self.pokemon_list[int(num)]['Name']
-                    
+
                     attack = pokemon.get('individual_attack', 0)
                     defense = pokemon.get('individual_defense', 0)
                     stamina = pokemon.get('individual_stamina', 0)
@@ -83,17 +84,22 @@ class Renamer():
                 except:
                     pass
 
+        self.pokemons.sort(key=lambda x: (x['num'], -x['cp']))
+
 
     def rename_pokemons(self):
         already_renamed = 0
-        
+
         for pokemon in self.pokemons:
             iv = pokemon['attack'] + pokemon['defense'] + pokemon['stamina']
             if iv < 10:
                 iv = "0" + str(iv)
             name = str(iv) + ", " + str(pokemon['attack']) + "/" + str(pokemon['defense']) + "/" + str(pokemon['stamina'])
 
-            if pokemon['nickname'] == "NONE" or pokemon['nickname'] == pokemon['name'] or (pokemon['nickname'] != name and self.config.overwrite):
+            if not self.config.rename:
+                print(pokemon['name'] + " (CP " + str(pokemon['cp'])  + "): [" + str(iv) + "] " + str(pokemon['attack']) + "/" + str(pokemon['defense']) + "/" + str(pokemon['stamina']))
+
+            elif pokemon['nickname'] == "NONE" or pokemon['nickname'] == pokemon['name'] or (pokemon['nickname'] != name and self.config.overwrite):
                 print("Renaming " + pokemon['name'] + " (CP " + str(pokemon['cp'])  + ") to " + name)
 
                 self.api.nickname_pokemon(pokemon_id = pokemon['id'], nickname = name)
@@ -117,7 +123,7 @@ class Renamer():
                 response_dict = self.api.call()
 
                 time.sleep(self.config.delay)
-                
+
                 cleared += 1
 
         print("Cleared " + str(cleared) + " names")
